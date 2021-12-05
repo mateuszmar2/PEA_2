@@ -18,6 +18,9 @@ private:
 
 public:
     SimulatedAnnealing(std::vector<std::vector<int>> towns);
+    int getRouteCost();
+    void setStopTime(int stop_time); // ustawia kryterium stopu jako czas wykonania w sekundach
+    void setAttributes(double temperature, double min_temperature, double temperature_change, int maxit, int stop_time);
     int pathDistance(std::vector<int> route_to_calculate); // oblicza koszt ścieżki
     int randomIndex();                                     // zwraca losowy indeks miasta
     void startSA();                                        // główna część algorytmu

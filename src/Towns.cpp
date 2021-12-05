@@ -3,27 +3,26 @@
 #include <fstream>
 #include <cstdlib>
 #include <ctime>
+#include <string.h>
 
 using namespace std;
 
-void Towns::generateRandomData(int size)
+int Towns::getOptimalResult()
 {
-    srand(time(NULL));
-    // vector wypełniony taką ilością vectorów, z wartością 0, ile jest miast
-    vector<vector<int>> temp_towns(size, vector<int>(size, 0));
-    for (int i = 0; i < size; i++)
-        for (int j = 0; j < size; j++)
-            temp_towns[i][j] = i == j ? -1 : rand() % 100;
-    towns = temp_towns;
+    return optimal_result;
 }
 
 void Towns::loadDataFromFile(const char *filename)
 {
     ifstream file;
+    optimal_result = 0;
     file.open(filename);
 
     if (!file)
+    {
         cout << "File open error" << endl;
+        return;
+    }
     else
     {
         int temp;
@@ -31,6 +30,11 @@ void Towns::loadDataFromFile(const char *filename)
         if (temp <= 0)
         {
             cout << "The number of towns is incorrect" << endl;
+            return;
+        }
+        if (file.fail())
+        {
+            cout << "Wrong data in file" << endl;
             return;
         }
         // vector wypełniony taką ilością vectorów, z wartością 0, ile jest miast
@@ -41,6 +45,11 @@ void Towns::loadDataFromFile(const char *filename)
             for (int j = 0; j < temp; j++)
             {
                 file >> temp_towns[i][j];
+                if (file.fail())
+                {
+                    cout << "Wrong data in file" << endl;
+                    return;
+                }
                 if (file.peek() == EOF && j != temp - 1)
                 {
                     cout << "Not enough data compared to the number of towns" << endl;
@@ -52,8 +61,16 @@ void Towns::loadDataFromFile(const char *filename)
         file.close();
         for (int i = 0; i < temp; i++)
             towns[i][i] = -1;
-        printData();
     }
+    if (strcmp(filename, "br17.tsp") == 0)
+        optimal_result = 39;
+    else if (strcmp(filename, "ftv55.tsp") == 0)
+        optimal_result = 1608;
+    else if (strcmp(filename, "ftv170.tsp") == 0)
+        optimal_result = 2755;
+    else if (strcmp(filename, "kroA100.tsp") == 0)
+        optimal_result = 21282;
+    cout << "Data loaded successfully" << endl;
 }
 void Towns::printData()
 {

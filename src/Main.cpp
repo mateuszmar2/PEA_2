@@ -7,23 +7,146 @@
 
 using namespace std;
 
+void menuSA(Towns &towns, int &stop_time, double &temperature, double &min_temperature, double &temperature_change, int &maxit)
+{
+    int action;
+    int value;
+    double temp;
+    do
+    {
+        cout << endl
+             << "Which action you want to perform? Type appropriate number " << endl;
+        cout << "1 - Run Simulated Annealing algorithm " << endl;
+        cout << "2 - Modify temperature, current = " << temperature << endl;
+        cout << "3 - Modify minimum temperature, current = " << min_temperature << endl;
+        cout << "4 - Modify temperature change, current = " << temperature_change << endl;
+        cout << "5 - Modify maximum number of iterations, current = " << maxit << endl;
+        cout << "6 - Modify stop time, current = " << stop_time << endl;
+        cout << "7 - Exit SA mode " << endl;
+        cout << "SA> ";
+        cin >> action;
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cout << endl;
+        switch (action)
+        {
+        case 1: // algorytm
+        {
+            if (towns.getTowns().empty())
+            {
+                cout << "Load data first" << endl;
+                break;
+            }
+            std::chrono::steady_clock::time_point start =
+                std::chrono::steady_clock::now();
+            SimulatedAnnealing sa(towns.getTowns());
+            sa.setAttributes(temperature, min_temperature, temperature_change, maxit, stop_time);
+            sa.startSA();
+            std::chrono::steady_clock::time_point end =
+                std::chrono::steady_clock::now();
+            sa.printRoute();
+            std::cout << "Execution time: "
+                      << std::chrono::duration_cast<std::chrono::microseconds>(
+                             end - start)
+                             .count()
+                      << "us\n";
+            if (towns.getOptimalResult() != 0)
+                cout << "Relative error: " << float(abs(sa.getRouteCost() - towns.getOptimalResult())) / towns.getOptimalResult() * 100 << "%" << endl;
+            break;
+        }
+        case 2: // temperatura
+            cout << "Enter new temperature: ";
+            cin >> temp;
+            if (temp <= 0 || cin.fail())
+            {
+                // cin.clear();
+                // cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Invalid temperature" << endl;
+                break;
+            }
+            temperature = temp;
+            break;
+        case 3: // min_temp
+            cout << "Enter new minimum temperature: ";
+            cin >> temp;
+            if (temp <= 0 || cin.fail())
+            {
+                // cin.clear();
+                // cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Invalid minimum temperature" << endl;
+                break;
+            }
+            min_temperature = temp;
+            break;
+        case 4: // temperature change
+            cout << "Enter new temperature change: ";
+            cin >> temp;
+            if (temp <= 0 || cin.fail())
+            {
+                // cin.clear();
+                // cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Invalid temperature change" << endl;
+                break;
+            }
+            temperature_change = temp;
+            break;
+        case 5: // maxit
+            cout << "Enter new maximum number of iterations: ";
+            cin >> value;
+            if (value <= 0 || cin.fail())
+            {
+                // cin.clear();
+                // cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Invalid maximum number of iterations" << endl;
+                break;
+            }
+            maxit = value;
+            break;
+        case 6: // stop time
+            cout << "Enter new stop time: ";
+            cin >> value;
+            if (value <= 0 || cin.fail())
+            {
+                // cin.clear();
+                // cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Invalid stop time" << endl;
+                break;
+            }
+
+            stop_time = value;
+            break;
+        case 7: // wyjście
+            break;
+        default:
+            cout << "Type appropriate number" << endl;
+            break;
+        }
+    } while (action != 7);
+}
+
 void menu()
 {
     Towns towns;
     char choice;
     char filename[50];
+    double temperature = 100;
+    double min_temperature = 1;
+    double temperature_change = 0.99;
+    int maxit = 10000;
+    int stop_time = 60;
     do
     {
         cout << endl
              << "Which action you want to perform? Type appropriate number " << endl;
         cout << "p - Print data " << endl;
         cout << "l - Load data from file " << endl;
-        cout << "g - Generate random data" << endl;
-        cout << "s - Simulated Annealing algorithm " << endl;
-        cout << "t - Tabu Search algorithm " << endl;
         cout << "c - Set stop criterion" << endl;
+        cout << "s - Simulated Annealing menu " << endl;
+        cout << "t - Tabu Search algorithm " << endl;
         cout << "e - Exit the program " << endl;
         cin >> choice;
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
         cout << endl;
         switch (choice)
         {
@@ -41,39 +164,24 @@ void menu()
             cout << endl;
             towns.loadDataFromFile(filename);
             break;
-        case 'g': // wygenerowanie zestawu losowych danych
+        case 'c': // ustawianie kryterium stopu
         {
-            int value = 0;
-            cout << "Enter how many towns you want to create: ";
-            cin >> value;
-            if (value <= 0)
+            cout << "Enter after how many seconds program should stop: ";
+            cin >> stop_time;
+            if (stop_time <= 0 || cin.fail())
             {
-                cout << "Invalid number of towns" << endl;
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Invalid number of seconds" << endl;
+                cout << "Stop time is set to default = 60" << endl;
+                stop_time = 60;
                 break;
             }
-            towns.generateRandomData(value);
-            towns.printData();
             break;
         }
-        case 's': // Simulated Annealing
+        case 's': // Simulated Annealing menu
         {
-            if (towns.getTowns().empty())
-            {
-                cout << "Load data first" << endl;
-                break;
-            }
-            std::chrono::steady_clock::time_point start =
-                std::chrono::steady_clock::now();
-            SimulatedAnnealing sa(towns.getTowns());
-            sa.startSA();
-            std::chrono::steady_clock::time_point end =
-                std::chrono::steady_clock::now();
-            sa.printRoute();
-            std::cout << "Execution time: "
-                      << std::chrono::duration_cast<std::chrono::microseconds>(
-                             end - start)
-                             .count()
-                      << "us\n";
+            menuSA(towns, stop_time, temperature, min_temperature, temperature_change, maxit);
             break;
         }
         case 't': // Tabu Search
@@ -94,10 +202,6 @@ void menu()
                              end - start)
                              .count()
                       << "us\n";
-            break;
-        }
-        case 'c': // ustawianie kryterium stopu
-        {
             break;
         }
         case 'e': // wyjście

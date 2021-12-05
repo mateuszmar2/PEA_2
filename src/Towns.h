@@ -7,8 +7,10 @@ class Towns
 {
 private:
     std::vector<std::vector<int>> towns;
+    int optimal_result;
 
 public:
+    int getOptimalResult();
     void generateRandomData(int size);
     void loadDataFromFile(const char *filename);
     void printData();
