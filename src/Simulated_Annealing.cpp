@@ -7,25 +7,23 @@
 
 using namespace std;
 
-int SimulatedAnnealing::getRouteCost()
-{
-    return route_cost;
-}
-
-SimulatedAnnealing::SimulatedAnnealing(vector<vector<int>> towns)
+SimulatedAnnealing::SimulatedAnnealing(vector<vector<int>> towns, NeighbourOperation operation, double temperature, double min_temperature, double temperature_change, int maxit, int stop_time)
 {
     srand(time(NULL));
     matrix = towns;
     number_of_towns = matrix[0].size();
-}
-
-void SimulatedAnnealing::setAttributes(double temperature, double min_temperature, double temperature_change, int maxit, int stop_time)
-{
+    this->operation = operation;
     this->temperature = temperature;
     this->min_temperature = min_temperature;
     this->temperature_change = temperature_change;
     this->maxit = maxit;
     this->stop_time = stop_time;
+}
+
+// zwraca koszt najlepszej ścieżki
+int SimulatedAnnealing::getRouteCost()
+{
+    return route_cost;
 }
 
 // zwraca długość trasy, trasa powinna zaczynać i kończyć się 0
@@ -44,46 +42,76 @@ int SimulatedAnnealing::randomIndex()
     return rand() % (number_of_towns - 2) + 1;
 }
 
+// zwraca losową ścieżkę zaczynającą i kończącą się na 0
+vector<int> SimulatedAnnealing::randomRoute()
+{
+    vector<int> temp;
+    for (int i = 0; i < number_of_towns; i++)
+        temp.push_back(i);                        // w trasie indexy od 0 do liczby miast
+    random_shuffle(temp.begin() + 1, temp.end()); // losowa trasa zaczynająca się od 0
+    temp.push_back(0);                            // i kończąca się na 0
+    return temp;
+}
+
+// tworzy sąsiada wybranego za pomocą danej metody
+void SimulatedAnnealing::generateNeighbour(NeighbourOperation o, vector<int> &route)
+{
+    int first_rand_index = randomIndex();
+    int second_rand_index = randomIndex();
+    while (first_rand_index == second_rand_index) // wylosowane indeksy nie powinny być identyczne
+        second_rand_index = randomIndex();
+
+    switch (o)
+    {
+    case SwapOperation:
+        swap(route[first_rand_index], route[second_rand_index]);
+        break;
+    case ReverseOperation:
+        if (first_rand_index > second_rand_index)
+            swap(first_rand_index, second_rand_index);                                    // pierwszy index musi być mniejszy od drugiego
+        reverse(route.begin() + first_rand_index, route.begin() + second_rand_index + 1); // odwrócenie wartości pomiędzy wylosowanymi indeksami
+        break;
+    case InsertOperation:
+        if (first_rand_index > second_rand_index)
+            swap(first_rand_index, second_rand_index); // pierwszy index musi być mniejszy od drugiego
+
+        rotate(route.begin() + first_rand_index, route.begin() + first_rand_index + 1, route.begin() + second_rand_index + 1); // wstawienie wartości za wylosowanym indeksem
+        break;
+    }
+}
+
 // główna część algorytmu
 void SimulatedAnnealing::startSA()
 {
     time_t start_time = time(NULL);
-    for (int i = 0; i < number_of_towns; i++)
-        route.push_back(i);                         // w trasie indexy od 0 do liczby miast
-    random_shuffle(route.begin() + 1, route.end()); // losowa trasa zaczynająca się od 0
-    route.push_back(0);                             // i kończąca się na 0
-    route_cost = pathDistance(route);
+    vector<int> current_best = randomRoute();
+    int current_best_cost = pathDistance(current_best);
+    route = current_best;
+    route_cost = current_best_cost;
 
     while (true)
     {
         // jeżeli temperatura jest zbyt niska lub przekroczono dozwolony czas to przerwij
         if (temperature < min_temperature || time(NULL) >= start_time + stop_time)
             break;
-        for (int i = 0; i < maxit; i++)
+        for (int i = 0; i < maxit; i++) // dopóki nie przekroczono dozwolonej liczby iteracji
         {
-            vector<int> temp_route = route; // tymczasowa ścieżka, na której będą przeprowadzane zmiany
-            int first_rand_index = randomIndex();
-            int second_rand_index = randomIndex();
-            while (first_rand_index == second_rand_index) // wylosowane indeksy nie powinny być identyczne
-                second_rand_index = randomIndex();
-
-            if (first_rand_index > second_rand_index)
-                swap(first_rand_index, second_rand_index); // pierwszy index musi być mniejszy od drugiego
-            // reverse(temp_route.begin() + first_rand_index + 1, temp_route.begin() + second_rand_index); // odwrócenie wartości pomiędzy wylosowanymi indeksami
-            swap(temp_route[first_rand_index], temp_route[second_rand_index]);
-            int temp_route_cost = pathDistance(temp_route);
-            // cout << exp(-(route_cost - temp_route_cost) / temperature) << endl; // TODO do usuniecia
-            // cout << temperature << endl;                                        // TODO do usuniecia
-            // cout << temp_route_cost - route_cost << endl;                       // TODO do usuniecia
-            if (temp_route_cost < route_cost) // jeżeli nowa ścieżka jest lepsza od poprzedniej
+            vector<int> current_best_neighbour = current_best; // tymczasowa ścieżka, na której będą przeprowadzane zmiany
+            generateNeighbour(operation, current_best_neighbour);
+            int current_best_neighbour_cost = pathDistance(current_best_neighbour);
+            if (current_best_neighbour_cost >= current_best_cost) // jeżeli nowa ścieżka jest gorsza od poprzedniej
             {
-                route = temp_route; // to akceptuj ją jako nową trasę
-                route_cost = temp_route_cost;
+                double delta = current_best_cost - current_best_neighbour_cost;
+                if (exp(-delta / temperature) < rand()) // jeżeli znalezione rozwiązanie jest gorsze to sąsiad jest odrzucany
+                    continue;
             }
-            else if (exp(-(route_cost - temp_route_cost) / temperature) < rand()) // jeżeli znalezione rozwiązanie jest gorsze to zostanie sprawdzony warunek
+            current_best = current_best_neighbour; // akceptuj sąsiada
+            current_best_cost = current_best_neighbour_cost;
+
+            if (current_best_cost < route_cost) // czy zaakceptowany sąsiad jest lepszy niż dotychczas najlepsza
             {
-                route = temp_route;
-                route_cost = temp_route_cost;
+                route = current_best;
+                route_cost = current_best_cost;
             }
         }
         temperature *= temperature_change; // obniżenie temperatury
@@ -93,8 +121,8 @@ void SimulatedAnnealing::startSA()
 // wypisuje trasę oraz koszt
 void SimulatedAnnealing::printRoute()
 {
-    // for (auto i = 0; i < route.size() - 1; i++)
-    //     cout << route[i] << " -> ";
-    // cout << route[route.size() - 1] << endl;
+    for (auto i = 0; i < route.size() - 1; i++)
+        cout << route[i] << " -> ";
+    cout << route[route.size() - 1] << endl;
     cout << "Cost = " << route_cost << endl;
 }

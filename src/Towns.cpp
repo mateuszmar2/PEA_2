@@ -15,7 +15,6 @@ int Towns::getOptimalResult()
 void Towns::loadDataFromFile(const char *filename)
 {
     ifstream file;
-    optimal_result = 0;
     file.open(filename);
 
     if (!file)
@@ -62,6 +61,7 @@ void Towns::loadDataFromFile(const char *filename)
         for (int i = 0; i < temp; i++)
             towns[i][i] = -1;
     }
+    optimal_result = 0;
     if (strcmp(filename, "br17.tsp") == 0)
         optimal_result = 39;
     else if (strcmp(filename, "ftv55.tsp") == 0)
