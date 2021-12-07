@@ -167,7 +167,20 @@ void menuTS(Towns &towns, int &stop_time, int &maxit, int &tabu_lifetime, Neighb
         cout << "4 - Modify tabu lifetime, current = " << tabu_lifetime << endl;
         cout << "5 - Modify maximum number of iterations, current = " << maxit << endl;
         cout << "6 - Modify stop time, current = " << stop_time << endl;
-        cout << "7 - Exit SA mode " << endl;
+        cout << "7 - Modify neighbour operation, current = ";
+        switch (operation)
+        {
+        case 1:
+            cout << "Swap Operation" << endl;
+            break;
+        case 2:
+            cout << "Reverse Operation" << endl;
+            break;
+        case 3:
+            cout << "Insert Operation" << endl;
+            break;
+        }
+        cout << "8 - Exit SA mode " << endl;
         cout << "TS> ";
         cin >> action;
         cin.clear();
@@ -184,8 +197,7 @@ void menuTS(Towns &towns, int &stop_time, int &maxit, int &tabu_lifetime, Neighb
             }
             std::chrono::steady_clock::time_point start =
                 std::chrono::steady_clock::now();
-            TabuSearch ts(towns.getTowns());
-            ts.setAttributes(maxit, stop_time, tabu_lifetime);
+            TabuSearch ts(towns.getTowns(), operation, maxit, stop_time, tabu_lifetime);
             ts.startTS();
             std::chrono::steady_clock::time_point end =
                 std::chrono::steady_clock::now();
@@ -228,8 +240,6 @@ void menuTS(Towns &towns, int &stop_time, int &maxit, int &tabu_lifetime, Neighb
             cin >> value;
             if (value <= 0 || cin.fail())
             {
-                // cin.clear();
-                // cin.ignore(numeric_limits<streamsize>::max(), '\n');
                 cout << "Invalid tabu lifetime" << endl;
                 break;
             }
@@ -240,8 +250,6 @@ void menuTS(Towns &towns, int &stop_time, int &maxit, int &tabu_lifetime, Neighb
             cin >> value;
             if (value <= 0 || cin.fail())
             {
-                // cin.clear();
-                // cin.ignore(numeric_limits<streamsize>::max(), '\n');
                 cout << "Invalid maximum number of iterations" << endl;
                 break;
             }
@@ -252,21 +260,43 @@ void menuTS(Towns &towns, int &stop_time, int &maxit, int &tabu_lifetime, Neighb
             cin >> value;
             if (value <= 0 || cin.fail())
             {
-                // cin.clear();
-                // cin.ignore(numeric_limits<streamsize>::max(), '\n');
                 cout << "Invalid stop time" << endl;
                 break;
             }
 
             stop_time = value;
             break;
-        case 7: // wyjście
+        case 7: // neighbour operation
+            cout << "1 - Swap Operation" << endl;
+            cout << "2 - Reverse Operation" << endl;
+            cout << "3 - Insert Operation" << endl;
+            cout << "Enter new neighbour operation: ";
+            cin >> value;
+            if (value <= 0 || cin.fail() || value > 3)
+            {
+                cout << "Invalid neighbour operation" << endl;
+                break;
+            }
+            switch (value)
+            {
+            case 1:
+                operation = SwapOperation;
+                break;
+            case 2:
+                operation = ReverseOperation;
+                break;
+            case 3:
+                operation = InsertOperation;
+                break;
+            }
+            break;
+        case 8: // wyjście
             break;
         default:
             cout << "Type appropriate number" << endl;
             break;
         }
-    } while (action != 7);
+    } while (action != 8);
 }
 
 void menu()
