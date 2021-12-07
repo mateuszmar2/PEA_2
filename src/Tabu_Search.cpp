@@ -51,6 +51,13 @@ vector<int> TabuSearch::randomRoute()
     return temp;
 }
 
+bool TabuSearch::aspiration(int x, int y, int current_cost)
+{
+    if (current_cost < route_cost)
+        return true;
+    return false;
+}
+
 // tworzy sąsiada wybranego za pomocą danej metody
 vector<int> TabuSearch::generateNeighbour(NeighbourOperation o, vector<int> route)
 {
@@ -63,37 +70,39 @@ vector<int> TabuSearch::generateNeighbour(NeighbourOperation o, vector<int> rout
     {
         for (int j = 1; j < number_of_towns - 1; j++)
         {
-            if (tabu_list[i][j] == 0) // jeśli lista tabu nie zabrania takiej zmiany
+            vector<int> current_path = route; // tymczasowa ścieżka, na której będą przeprowadzane zmiany
+            int first_index = i;
+            int second_index = j;
+            switch (o)
             {
-                vector<int> current_path = route; // tymczasowa ścieżka, na której będą przeprowadzane zmiany
-                int first_index = i;
-                int second_index = j;
-                switch (o)
-                {
-                case SwapOperation:
-                    swap(current_path[first_index], current_path[second_index]);
-                    break;
-                case ReverseOperation:
-                    if (first_index > second_index)
-                        swap(first_index, second_index);                                                  // pierwszy index musi być mniejszy od drugiego
-                    reverse(current_path.begin() + first_index, current_path.begin() + second_index + 1); // odwrócenie wartości pomiędzy wylosowanymi indeksami
-                    break;
-                case InsertOperation:
-                    if (first_index > second_index)
-                        swap(first_index, second_index); // pierwszy index musi być mniejszy od drugiego
+            case SwapOperation:
+                swap(current_path[first_index], current_path[second_index]);
+                break;
+            case ReverseOperation:
+                if (first_index > second_index)
+                    swap(first_index, second_index);                                                  // pierwszy index musi być mniejszy od drugiego
+                reverse(current_path.begin() + first_index, current_path.begin() + second_index + 1); // odwrócenie wartości pomiędzy wylosowanymi indeksami
+                break;
+            case InsertOperation:
+                if (first_index > second_index)
+                    swap(first_index, second_index); // pierwszy index musi być mniejszy od drugiego
 
-                    rotate(current_path.begin() + first_index, current_path.begin() + first_index + 1, current_path.begin() + second_index + 1); // wstawienie wartości za wylosowanym indeksem
-                    break;
-                }
-                int current_cost = pathDistance(current_path);
+                rotate(current_path.begin() + first_index, current_path.begin() + first_index + 1, current_path.begin() + second_index + 1); // wstawienie wartości za wylosowanym indeksem
+                break;
+            }
+            int current_cost = pathDistance(current_path);
 
-                if (current_cost < current_best_cost) // jeżeli nowa ścieżka jest lepsza od poprzedniej
-                {
-                    current_best_path = current_path; // to akceptuj ją jako nową trasę
-                    current_best_cost = current_cost;
-                    first_index = i; // zapamiętaj indeksy, potrzebne do listy tabu
-                    second_index = j;
-                }
+            if (tabu_list[i][j] != 0)                // jeśli lista tabu zabrania takiej zmiany
+                if (!aspiration(i, j, current_cost)) // jeżeli kryterium aspiracji nie jest spełnione zakazu to kontunuuj pętle
+                    continue;
+
+            // jeżeli tabu nie zabrania lub kryterium aspiracji zostało spełnione to można wziąć pod uwagę dane rozwiązanie
+            if (current_cost < current_best_cost) // jeżeli nowa ścieżka jest lepsza od poprzedniej
+            {
+                current_best_path = current_path; // to akceptuj ją jako nową trasę
+                current_best_cost = current_cost;
+                first_index = i; // zapamiętaj indeksy, potrzebne do listy tabu
+                second_index = j;
             }
         }
     }
@@ -130,6 +139,7 @@ void TabuSearch::startTS()
             route = current_best;
             route_cost = current_best_cost;
         }
+        // TODO tutaj chyba lepiej dodawać elementy do listy tabu
         for (int i = 0; i < number_of_towns; i++)
             for (int j = 0; j < number_of_towns; j++)
                 if (tabu_list[i][j] > 0)
