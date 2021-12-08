@@ -4,19 +4,20 @@
 #include <algorithm>
 #include <ctime>
 #include <climits>
+#include <chrono>
 
 using namespace std;
 
-TabuSearch::TabuSearch(vector<vector<int>> towns, NeighbourOperation operation, int maxit, int stop_time, int tabu_lifetime)
+TabuSearch::TabuSearch(vector<vector<int>> towns, NeighbourOperation operation, int max_it_without_change, int stop_time, int tabu_lifetime, bool diversification)
 {
-    srand(time(NULL));
     matrix = towns;
     number_of_towns = matrix[0].size();
     tabu_list = vector<vector<int>>(number_of_towns, vector<int>(number_of_towns, 0));
     this->operation = operation;
-    this->maxit = maxit;
+    this->max_it_without_change = max_it_without_change;
     this->stop_time = stop_time;
     this->tabu_lifetime = tabu_lifetime;
+    this->diversification = diversification;
 }
 
 int TabuSearch::getRouteCost()
@@ -37,10 +38,10 @@ int TabuSearch::pathDistance(vector<int> route_to_calculate)
 // zwraca losowy index poza pierwszym i ostatnim
 int TabuSearch::randomIndex()
 {
-    return rand() % (number_of_towns - 2) + 1;
+    return rand() % (number_of_towns - 1) + 1;
 }
 
-// zwraca losową ścieżkę zaczynającą i kończącą się na 0
+// zwraca losową ścieżit_without_changeę zaczynającą i kończącą się na 0
 vector<int> TabuSearch::randomRoute()
 {
     vector<int> temp;
@@ -51,49 +52,51 @@ vector<int> TabuSearch::randomRoute()
     return temp;
 }
 
-bool TabuSearch::aspiration(int x, int y, int current_cost)
+bool TabuSearch::aspiration(int &current_cost)
 {
-    if (current_cost < route_cost)
-        return true;
-    return false;
+    return current_cost < route_cost;
 }
 
 // tworzy sąsiada wybranego za pomocą danej metody
-vector<int> TabuSearch::generateNeighbour(NeighbourOperation o, vector<int> route)
+vector<int> TabuSearch::generateNeighbour(NeighbourOperation o, vector<int> r)
 {
     vector<int> current_best_path;
     int current_best_cost = INT_MAX;
     int first_index = 0;
     int second_index = 0;
 
-    for (int i = 1; i < number_of_towns - 1; i++)
+    for (int i = 1; i < number_of_towns; i++)
     {
-        for (int j = 1; j < number_of_towns - 1; j++)
+        for (int j = 1; j < number_of_towns; j++)
         {
-            vector<int> current_path = route; // tymczasowa ścieżka, na której będą przeprowadzane zmiany
-            int first_index = i;
-            int second_index = j;
+            if (i == j)
+                continue;
+
+            vector<int> current_path = r; // tymczasowa ścieżka, na której będą przeprowadzane zmiany
+            // first_index = i;
+            // second_index = j;
             switch (o)
             {
             case SwapOperation:
-                swap(current_path[first_index], current_path[second_index]);
+                swap(current_path[i], current_path[j]);
                 break;
             case ReverseOperation:
-                if (first_index > second_index)
-                    swap(first_index, second_index);                                                  // pierwszy index musi być mniejszy od drugiego
-                reverse(current_path.begin() + first_index, current_path.begin() + second_index + 1); // odwrócenie wartości pomiędzy wylosowanymi indeksami
+                if (i < j)
+                    reverse(current_path.begin() + i, current_path.begin() + j + 1); // odwrócenie wartości pomiędzy wylosowanymi indeksami
+                else
+                    reverse(current_path.begin() + j, current_path.begin() + i + 1); // odwrócenie wartości pomiędzy wylosowanymi indeksami
                 break;
             case InsertOperation:
-                if (first_index > second_index)
-                    swap(first_index, second_index); // pierwszy index musi być mniejszy od drugiego
-
-                rotate(current_path.begin() + first_index, current_path.begin() + first_index + 1, current_path.begin() + second_index + 1); // wstawienie wartości za wylosowanym indeksem
+                if (i < j)
+                    rotate(current_path.begin() + i, current_path.begin() + i + 1, current_path.begin() + j + 1);
+                else
+                    rotate(current_path.begin() + j, current_path.begin() + i, current_path.begin() + i + 1);
                 break;
             }
             int current_cost = pathDistance(current_path);
 
-            if (tabu_list[i][j] != 0)                // jeśli lista tabu zabrania takiej zmiany
-                if (!aspiration(i, j, current_cost)) // jeżeli kryterium aspiracji nie jest spełnione zakazu to kontunuuj pętle
+            if (tabu_list[i][j] != 0)          // jeśli lista tabu zabrania takiej zmiany
+                if (!aspiration(current_cost)) // jeżeli kryterium aspiracji nie jest spełnione zakazu to kontunuuj pętle
                     continue;
 
             // jeżeli tabu nie zabrania lub kryterium aspiracji zostało spełnione to można wziąć pod uwagę dane rozwiązanie
@@ -107,37 +110,57 @@ vector<int> TabuSearch::generateNeighbour(NeighbourOperation o, vector<int> rout
         }
     }
     tabu_list[first_index][second_index] = tabu_lifetime;
-    tabu_list[second_index][first_index] = tabu_lifetime;
+    if (o != InsertOperation)
+        tabu_list[second_index][first_index] = tabu_lifetime;
     return current_best_path;
 }
 
 // główna część algorytmu
 void TabuSearch::startTS()
 {
-    time_t start_time = time(NULL);
+    chrono::system_clock::time_point start_time = chrono::system_clock::now();
+    vector<int> current_best_neighbour;
     vector<int> current_best = randomRoute();
     int current_best_cost = pathDistance(current_best);
     route = current_best;
     route_cost = current_best_cost;
+    int it_without_change = 0;
 
-    // while (true)
-    // {
-    for (int i = 0; i < maxit; i++) // dopóki nie przekroczono dozwolonej liczby iteracji
+    while (true)
     {
         // jeżeli przekroczono dozwolony czas to przerwij
-        if (time(NULL) >= start_time + stop_time)
+        int64_t time_diff = chrono::duration_cast<chrono::seconds>(chrono::system_clock::now() - start_time).count();
+        if (time_diff >= stop_time)
             break;
-        vector<int> current_best_neighbour = generateNeighbour(operation, current_best);
-        int current_best_neighbour_cost = pathDistance(current_best_neighbour);
-        if (current_best_neighbour_cost < current_best_cost) // jeżeli nowa ścieżka jest lepsza od poprzedniej najlepszej
+
+        if (diversification && it_without_change > max_it_without_change)
         {
+            current_best = randomRoute();
+            current_best_cost = pathDistance(current_best);
+            for (int i = 0; i < number_of_towns; i++)
+                for (int j = 0; j < number_of_towns; j++)
+                    tabu_list[i][j] = 0; // dekrementuj każdą większą od 0 wartość w tabu list
+            it_without_change = 0;
+        }
+        else
+        {
+            current_best_neighbour = generateNeighbour(operation, current_best);
+            int current_best_neighbour_cost = pathDistance(current_best_neighbour);
             current_best = current_best_neighbour; // to akceptuj ją jako nową trasę
             current_best_cost = current_best_neighbour_cost;
         }
+
+        // if (current_best_neighbour_cost < current_best_cost) // jeżeli nowa ścieżka jest lepsza od poprzedniej najlepszej
+        // {
+        // }
+        // else if (diversification)
+        it_without_change++;
+
         if (current_best_cost < route_cost) // czy zaakceptowany sąsiad jest lepszy niż dotychczas najlepsza ścieżka
         {
             route = current_best;
             route_cost = current_best_cost;
+            it_without_change = 0;
         }
         // TODO tutaj chyba lepiej dodawać elementy do listy tabu
         for (int i = 0; i < number_of_towns; i++)
@@ -145,7 +168,6 @@ void TabuSearch::startTS()
                 if (tabu_list[i][j] > 0)
                     tabu_list[i][j]--; // dekrementuj każdą większą od 0 wartość w tabu list
     }
-    // }
 }
 
 // wypisuje trasę oraz koszt

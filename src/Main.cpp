@@ -151,23 +151,20 @@ void menuSA(Towns &towns, int &stop_time, double &temperature, double &min_tempe
     } while (action != 8);
 }
 
-void menuTS(Towns &towns, int &stop_time, int &maxit, int &tabu_lifetime, NeighbourOperation &operation)
+void menuTS(Towns &towns, int &stop_time, int &max_it_without_change, int &tabu_lifetime, NeighbourOperation &operation, bool &diversification)
 {
     int action;
     int value;
-    // double temp;
     do
     {
         cout << endl
              << "Which action you want to perform? Type appropriate number " << endl;
         cout << "1 - Run Tabu Search algorithm " << endl;
-        // cout << "2 - Modify temperature, current = " << temperature << endl;
-        // cout << "3 - Modify minimum temperature, current = " << min_temperature << endl;
-        // cout << "4 - Modify temperature change, current = " << temperature_change << endl;
-        cout << "4 - Modify tabu lifetime, current = " << tabu_lifetime << endl;
-        cout << "5 - Modify maximum number of iterations, current = " << maxit << endl;
-        cout << "6 - Modify stop time, current = " << stop_time << endl;
-        cout << "7 - Modify neighbour operation, current = ";
+        cout << "2 - Modify diversification, current = " << diversification << " (0 - off, 1 - on)" << endl;
+        cout << "3 - Modify tabu lifetime, current = " << tabu_lifetime << endl;
+        cout << "4 - Modify maximum number of iterations without reset, current = " << max_it_without_change << endl;
+        cout << "5 - Modify stop time, current = " << stop_time << endl;
+        cout << "6 - Modify neighbour operation, current = ";
         switch (operation)
         {
         case 1:
@@ -180,7 +177,7 @@ void menuTS(Towns &towns, int &stop_time, int &maxit, int &tabu_lifetime, Neighb
             cout << "Insert Operation" << endl;
             break;
         }
-        cout << "8 - Exit SA mode " << endl;
+        cout << "8 - Exit TS mode " << endl;
         cout << "TS> ";
         cin >> action;
         cin.clear();
@@ -197,7 +194,7 @@ void menuTS(Towns &towns, int &stop_time, int &maxit, int &tabu_lifetime, Neighb
             }
             std::chrono::steady_clock::time_point start =
                 std::chrono::steady_clock::now();
-            TabuSearch ts(towns.getTowns(), operation, maxit, stop_time, tabu_lifetime);
+            TabuSearch ts(towns.getTowns(), operation, max_it_without_change, stop_time, tabu_lifetime, diversification);
             ts.startTS();
             std::chrono::steady_clock::time_point end =
                 std::chrono::steady_clock::now();
@@ -211,31 +208,19 @@ void menuTS(Towns &towns, int &stop_time, int &maxit, int &tabu_lifetime, Neighb
                 cout << "Relative error: " << float(abs(ts.getRouteCost() - towns.getOptimalResult())) / towns.getOptimalResult() * 100 << "%" << endl;
             break;
         }
-        // case 2: // temperatura
-        //     cout << "Enter new temperature: ";
-        //     cin >> temp;
-        //     if (temp <= 0 || cin.fail())
-        //     {
-        //         // cin.clear();
-        //         // cin.ignore(numeric_limits<streamsize>::max(), '\n');
-        //         cout << "Invalid temperature" << endl;
-        //         break;
-        //     }
-        //     temperature = temp;
-        //     break;
-        // case 3: // min_temp
-        //     cout << "Enter new minimum temperature: ";
-        //     cin >> temp;
-        //     if (temp <= 0 || cin.fail())
-        //     {
-        //         // cin.clear();
-        //         // cin.ignore(numeric_limits<streamsize>::max(), '\n');
-        //         cout << "Invalid minimum temperature" << endl;
-        //         break;
-        //     }
-        //     min_temperature = temp;
-        //     break;
-        case 4: // tabu lifetime
+        case 2: // dywersyfikacja
+            cout << "Enter new diversification: ";
+            cin >> value;
+            if (value < 0 || value > 1 || cin.fail())
+            {
+                // cin.clear();
+                // cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Invalid diversification" << endl;
+                break;
+            }
+            diversification = value;
+            break;
+        case 3: // tabu lifetime
             cout << "Enter new tabu lifetime: ";
             cin >> value;
             if (value <= 0 || cin.fail())
@@ -245,7 +230,7 @@ void menuTS(Towns &towns, int &stop_time, int &maxit, int &tabu_lifetime, Neighb
             }
             tabu_lifetime = value;
             break;
-        case 5: // maxit
+        case 4: // max_it_without_change
             cout << "Enter new maximum number of iterations: ";
             cin >> value;
             if (value <= 0 || cin.fail())
@@ -253,9 +238,9 @@ void menuTS(Towns &towns, int &stop_time, int &maxit, int &tabu_lifetime, Neighb
                 cout << "Invalid maximum number of iterations" << endl;
                 break;
             }
-            maxit = value;
+            max_it_without_change = value;
             break;
-        case 6: // stop time
+        case 5: // stop time
             cout << "Enter new stop time: ";
             cin >> value;
             if (value <= 0 || cin.fail())
@@ -266,7 +251,7 @@ void menuTS(Towns &towns, int &stop_time, int &maxit, int &tabu_lifetime, Neighb
 
             stop_time = value;
             break;
-        case 7: // neighbour operation
+        case 6: // neighbour operation
             cout << "1 - Swap Operation" << endl;
             cout << "2 - Reverse Operation" << endl;
             cout << "3 - Insert Operation" << endl;
@@ -304,13 +289,16 @@ void menu()
     Towns towns;
     char choice;
     char filename[50];
-    double temperature = 1000;
-    double min_temperature = 1;
-    double temperature_change = 0.999;
-    int maxit = 5000;
-    int stop_time = 60;
-    int tabu_lifetime = 100;
-    NeighbourOperation operation = SwapOperation;
+    double temperature;
+    double min_temperature;
+    double temperature_change;
+    int maxit;
+    int stop_time;
+    int tabu_lifetime;
+    int max_it_without_change;
+    bool diversification;
+    int data_read_count = 0;
+    NeighbourOperation operation;
     do
     {
         cout << endl
@@ -339,6 +327,21 @@ void menu()
             cin >> filename;
             cout << endl;
             towns.loadDataFromFile(filename);
+            if (!towns.getTowns().empty() && data_read_count == 0)
+            {
+                data_read_count++;
+                int number_of_towns = towns.getTowns()[0].size();
+                temperature = 1000;
+                min_temperature = 1;
+                temperature_change = 0.999;
+                maxit = 5000;
+                stop_time = 10;
+                max_it_without_change = number_of_towns * 30;
+                tabu_lifetime = number_of_towns * 2;
+                diversification = true;
+                operation = SwapOperation;
+            }
+
             break;
         case 's': // Simulated Annealing menu
         {
@@ -347,7 +350,7 @@ void menu()
         }
         case 't': // Tabu Search
         {
-            menuTS(towns, stop_time, maxit, tabu_lifetime, operation);
+            menuTS(towns, stop_time, max_it_without_change, tabu_lifetime, operation, diversification);
             break;
         }
         case 'e': // wyjście
