@@ -5,6 +5,7 @@
 #include <ctime>
 #include <math.h>
 #include <chrono>
+#include <climits>
 
 using namespace std;
 
@@ -18,6 +19,22 @@ SimulatedAnnealing::SimulatedAnnealing(vector<vector<int>> towns, NeighbourOpera
     this->temperature_change = temperature_change;
     this->maxit = maxit;
     this->stop_time = stop_time;
+}
+// oblicza temperaturę na podstawie wielkości problemu
+void SimulatedAnnealing::calculateTemperature()
+{
+    for (int i = 0; i < number_of_towns; i++)
+    {
+        vector<int> random_route = randomRoute();
+        int cost = pathDistance(random_route);
+        if (cost < route_cost)
+        {
+            route_cost = cost;
+            route = random_route;
+        }
+    }
+    this->temperature = route_cost;
+    cout << "temperature = " << temperature << endl;
 }
 
 // zwraca koszt najlepszej ścieżki
@@ -53,30 +70,29 @@ vector<int> SimulatedAnnealing::randomRoute()
     return temp;
 }
 
-// tworzy sąsiada wybranego za pomocą danej metody
+// tworzy sąsiada za pomocą wybranej metody
 void SimulatedAnnealing::generateNeighbour(NeighbourOperation o, vector<int> &route)
 {
     int first_rand_index = randomIndex();
     int second_rand_index = randomIndex();
-    while (first_rand_index == second_rand_index) // wylosowane indeksy nie powinny być identyczne
+    while (first_rand_index == second_rand_index) // wylosowane indeksy nie nogą być identyczne
         second_rand_index = randomIndex();
 
     switch (o)
     {
     case SwapOperation:
-        swap(route[first_rand_index], route[second_rand_index]);
+        swap(route[first_rand_index], route[second_rand_index]); // zamiana wartości pod wylosowanymi indeksami
         break;
     case ReverseOperation:
         if (first_rand_index > second_rand_index)
             swap(first_rand_index, second_rand_index);                                    // pierwszy index musi być mniejszy od drugiego
         reverse(route.begin() + first_rand_index, route.begin() + second_rand_index + 1); // odwrócenie wartości pomiędzy wylosowanymi indeksami
         break;
-    case InsertOperation:
+    case InsertOperation: // przeniesienie wartości wskazywanej przez pierwszy indeks w miejsce wskazywane przez drugi indeks
         if (first_rand_index < second_rand_index)
             rotate(route.begin() + first_rand_index, route.begin() + first_rand_index + 1, route.begin() + second_rand_index + 1);
         else
             rotate(route.begin() + second_rand_index, route.begin() + first_rand_index, route.begin() + first_rand_index + 1);
-
         break;
     }
 }
@@ -85,17 +101,20 @@ void SimulatedAnnealing::generateNeighbour(NeighbourOperation o, vector<int> &ro
 void SimulatedAnnealing::startSA()
 {
     chrono::system_clock::time_point start_time = chrono::system_clock::now();
-    vector<int> current_best = randomRoute();
-    int current_best_cost = pathDistance(current_best);
-    route = current_best;
-    route_cost = current_best_cost;
+    route = randomRoute(); // route to globalnie najlepsza ścieżka
+    route_cost = pathDistance(route);
+    if (temperature == 0)
+        calculateTemperature();
+    vector<int> current_best = route;
+    int current_best_cost = route_cost;
 
     while (true)
     {
-        int64_t time_diff = chrono::duration_cast<chrono::seconds>(chrono::system_clock::now() - start_time).count();
         // jeżeli temperatura jest zbyt niska lub przekroczono dozwolony czas to przerwij
+        int64_t time_diff = chrono::duration_cast<chrono::seconds>(chrono::system_clock::now() - start_time).count();
         if (temperature < min_temperature || time_diff >= stop_time)
             break;
+
         for (int i = 0; i < maxit; i++) // dopóki nie przekroczono dozwolonej liczby iteracji
         {
             vector<int> current_best_neighbour = current_best; // tymczasowa ścieżka, na której będą przeprowadzane zmiany

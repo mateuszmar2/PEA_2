@@ -20,6 +20,7 @@ private:
 
 public:
     SimulatedAnnealing(std::vector<std::vector<int>> towns, NeighbourOperation operation, double temperature, double min_temperature, double temperature_change, int maxit, int stop_time);
+    void calculateTemperature();                                                // wylicza temperaturę na podstawie minimalnej z losowych ścieżek
     int getRouteCost();                                                         // zwraca najlepszą ścieżkę
     std::vector<int> randomRoute();                                             // zwraca losową ścieżkę zaczynającą i kończącą się na 0
     int pathDistance(std::vector<int> route_to_calculate);                      // oblicza koszt ścieżki
