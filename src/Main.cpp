@@ -20,6 +20,7 @@ void menuSA(Towns &towns, int &stop_time, double &temperature, double &min_tempe
              << "Which action you want to perform? Type appropriate number " << endl;
         cout << "1 - Run Simulated Annealing algorithm " << endl;
         cout << "2 - Modify temperature, current = " << temperature << endl;
+        cout << "   0 means that the temperature will be calculated based on the problem size" << endl;
         cout << "3 - Modify minimum temperature, current = " << min_temperature << endl;
         cout << "4 - Modify temperature change, current = " << temperature_change << endl;
         cout << "5 - Modify maximum number of iterations, current = " << maxit << endl;
@@ -71,7 +72,7 @@ void menuSA(Towns &towns, int &stop_time, double &temperature, double &min_tempe
         case 2: // temperatura
             cout << "Enter new temperature: ";
             cin >> temp;
-            if (temp <= 0 || cin.fail())
+            if (temp < 0 || cin.fail())
             {
                 cout << "Invalid temperature" << endl;
                 break;
@@ -81,7 +82,7 @@ void menuSA(Towns &towns, int &stop_time, double &temperature, double &min_tempe
         case 3: // min_temp
             cout << "Enter new minimum temperature: ";
             cin >> temp;
-            if (temp <= 0 || cin.fail())
+            if (temp <= 0 || cin.fail() || temp >= temperature)
             {
                 cout << "Invalid minimum temperature" << endl;
                 break;
@@ -91,7 +92,7 @@ void menuSA(Towns &towns, int &stop_time, double &temperature, double &min_tempe
         case 4: // temperature change
             cout << "Enter new temperature change: ";
             cin >> temp;
-            if (temp <= 0 || cin.fail())
+            if (temp <= 0 || cin.fail() || temp >= 1)
             {
                 cout << "Invalid temperature change" << endl;
                 break;
@@ -211,10 +212,8 @@ void menuTS(Towns &towns, int &stop_time, int &max_it_without_change, int &tabu_
         case 2: // dywersyfikacja
             cout << "Enter new diversification: ";
             cin >> value;
-            if (value < 0 || value > 1 || cin.fail())
+            if (value != 0 || value != 1 || cin.fail())
             {
-                // cin.clear();
-                // cin.ignore(numeric_limits<streamsize>::max(), '\n');
                 cout << "Invalid diversification" << endl;
                 break;
             }
@@ -331,25 +330,34 @@ void menu()
             {
                 data_read_count++;
                 int number_of_towns = towns.getTowns()[0].size();
-                temperature = 1000;
-                min_temperature = 1;
+                temperature = 0;
+                min_temperature = 0.01;
                 temperature_change = 0.999;
                 maxit = 5000;
-                stop_time = 10;
-                max_it_without_change = number_of_towns * 30;
+                stop_time = 60;
+                max_it_without_change = number_of_towns * 20;
                 tabu_lifetime = number_of_towns * 2;
                 diversification = true;
                 operation = SwapOperation;
             }
-
             break;
         case 's': // Simulated Annealing menu
         {
+            if (towns.getTowns().empty())
+            {
+                cout << "Load data first" << endl;
+                break;
+            }
             menuSA(towns, stop_time, temperature, min_temperature, temperature_change, maxit, operation);
             break;
         }
         case 't': // Tabu Search
         {
+            if (towns.getTowns().empty())
+            {
+                cout << "Load data first" << endl;
+                break;
+            }
             menuTS(towns, stop_time, max_it_without_change, tabu_lifetime, operation, diversification);
             break;
         }

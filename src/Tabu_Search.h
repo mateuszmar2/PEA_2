@@ -26,7 +26,6 @@ public:
     int randomIndex();                                                            // zwraca losowy indeks miasta
     bool aspiration(int &current_cost);                                           // funkcja sprawdzająca kryterium aspiracji
     std::vector<int> generateNeighbour(NeighbourOperation o, std::vector<int> r); // tworzy sąsiada wybranego za pomocą danej metody
-    std::vector<int> newSolution();                                               // zwraca najlepszego sąsiada
     void startTS();                                                               // główna część algorytmu
     void printRoute();                                                            // wyświela wynik
 };

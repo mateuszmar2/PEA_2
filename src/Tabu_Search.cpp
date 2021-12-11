@@ -73,20 +73,18 @@ vector<int> TabuSearch::generateNeighbour(NeighbourOperation o, vector<int> r)
                 continue;
 
             vector<int> current_path = r; // tymczasowa ścieżka, na której będą przeprowadzane zmiany
-            // first_index = i;
-            // second_index = j;
             switch (o)
             {
             case SwapOperation:
-                swap(current_path[i], current_path[j]);
+                swap(current_path[i], current_path[j]); // zamiana wartości pod danymi indeksami
                 break;
             case ReverseOperation:
                 if (i < j)
-                    reverse(current_path.begin() + i, current_path.begin() + j + 1); // odwrócenie wartości pomiędzy wylosowanymi indeksami
+                    reverse(current_path.begin() + i, current_path.begin() + j + 1); // odwrócenie wartości pomiędzy indeksami
                 else
-                    reverse(current_path.begin() + j, current_path.begin() + i + 1); // odwrócenie wartości pomiędzy wylosowanymi indeksami
+                    reverse(current_path.begin() + j, current_path.begin() + i + 1); // odwrócenie wartości pomiędzy indeksami
                 break;
-            case InsertOperation:
+            case InsertOperation: // przeniesienie wartości wskazywanej przez pierwszy indeks w miejsce wskazywane przez drugi indeks
                 if (i < j)
                     rotate(current_path.begin() + i, current_path.begin() + i + 1, current_path.begin() + j + 1);
                 else
@@ -96,7 +94,7 @@ vector<int> TabuSearch::generateNeighbour(NeighbourOperation o, vector<int> r)
             int current_cost = pathDistance(current_path);
 
             if (tabu_list[i][j] != 0)          // jeśli lista tabu zabrania takiej zmiany
-                if (!aspiration(current_cost)) // jeżeli kryterium aspiracji nie jest spełnione zakazu to kontunuuj pętle
+                if (!aspiration(current_cost)) // jeżeli kryterium aspiracji nie jest spełnione to kontunuuj pętle
                     continue;
 
             // jeżeli tabu nie zabrania lub kryterium aspiracji zostało spełnione to można wziąć pod uwagę dane rozwiązanie
@@ -109,6 +107,7 @@ vector<int> TabuSearch::generateNeighbour(NeighbourOperation o, vector<int> r)
             }
         }
     }
+    // zaktualizuj liste teabu
     tabu_list[first_index][second_index] = tabu_lifetime;
     if (o != InsertOperation)
         tabu_list[second_index][first_index] = tabu_lifetime;
@@ -139,21 +138,17 @@ void TabuSearch::startTS()
             current_best_cost = pathDistance(current_best);
             for (int i = 0; i < number_of_towns; i++)
                 for (int j = 0; j < number_of_towns; j++)
-                    tabu_list[i][j] = 0; // dekrementuj każdą większą od 0 wartość w tabu list
-            it_without_change = 0;
+                    tabu_list[i][j] = 0; // wyzeruj listę tabu
+            it_without_change = 0;       // oraz liczbę iteracji bez zmiany najlepszej trasy
         }
         else
         {
             current_best_neighbour = generateNeighbour(operation, current_best);
             int current_best_neighbour_cost = pathDistance(current_best_neighbour);
-            current_best = current_best_neighbour; // to akceptuj ją jako nową trasę
+            current_best = current_best_neighbour;
             current_best_cost = current_best_neighbour_cost;
         }
 
-        // if (current_best_neighbour_cost < current_best_cost) // jeżeli nowa ścieżka jest lepsza od poprzedniej najlepszej
-        // {
-        // }
-        // else if (diversification)
         it_without_change++;
 
         if (current_best_cost < route_cost) // czy zaakceptowany sąsiad jest lepszy niż dotychczas najlepsza ścieżka
@@ -162,7 +157,7 @@ void TabuSearch::startTS()
             route_cost = current_best_cost;
             it_without_change = 0;
         }
-        // TODO tutaj chyba lepiej dodawać elementy do listy tabu
+
         for (int i = 0; i < number_of_towns; i++)
             for (int j = 0; j < number_of_towns; j++)
                 if (tabu_list[i][j] > 0)
