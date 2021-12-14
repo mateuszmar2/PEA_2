@@ -20,38 +20,6 @@ TabuSearch::TabuSearch(vector<vector<int>> towns, NeighbourOperation operation, 
     this->diversification = diversification;
 }
 
-int TabuSearch::getRouteCost()
-{
-    return route_cost;
-}
-
-// zwraca długość trasy, trasa powinna zaczynać i kończyć się 0
-int TabuSearch::pathDistance(vector<int> route_to_calculate)
-{
-    int path_distance = 0;
-    // zliczenie sumy odległości w ścieżce aż do danego wierzchołka
-    for (int i = 0; i < number_of_towns; i++)
-        path_distance += matrix[route_to_calculate[i]][route_to_calculate[i + 1]];
-    return path_distance;
-}
-
-// zwraca losowy index poza pierwszym i ostatnim
-int TabuSearch::randomIndex()
-{
-    return rand() % (number_of_towns - 1) + 1;
-}
-
-// zwraca losową ścieżit_without_changeę zaczynającą i kończącą się na 0
-vector<int> TabuSearch::randomRoute()
-{
-    vector<int> temp;
-    for (int i = 0; i < number_of_towns; i++)
-        temp.push_back(i);                        // w trasie indexy od 0 do liczby miast
-    random_shuffle(temp.begin() + 1, temp.end()); // losowa trasa zaczynająca się od 0
-    temp.push_back(0);                            // i kończąca się na 0
-    return temp;
-}
-
 bool TabuSearch::aspiration(int &current_cost)
 {
     return current_cost < route_cost;
@@ -163,13 +131,4 @@ void TabuSearch::startTS()
                 if (tabu_list[i][j] > 0)
                     tabu_list[i][j]--; // dekrementuj każdą większą od 0 wartość w tabu list
     }
-}
-
-// wypisuje trasę oraz koszt
-void TabuSearch::printRoute()
-{
-    for (auto i = 0; i < route.size() - 1; i++)
-        cout << route[i] << " -> ";
-    cout << route[route.size() - 1] << endl;
-    cout << "Cost = " << route_cost << endl;
 }

@@ -1,7 +1,7 @@
 #include "Towns.h"
 #include "Simulated_Annealing.h"
 #include "Tabu_Search.h"
-#include "Neighbour.h"
+#include "TSP_Algorithm.h"
 
 #include <iostream>
 #include <limits>
@@ -9,7 +9,7 @@
 
 using namespace std;
 
-void menuSA(Towns &towns, int &stop_time, double &temperature, double &min_temperature, double &temperature_change, int &maxit, NeighbourOperation &operation)
+void menuSA(Towns &towns, int &stop_time, double &temperature, double &min_temperature, double &temperature_change, int &maxit, TspAlgorithm::NeighbourOperation &operation)
 {
     int action;
     int value;
@@ -133,13 +133,13 @@ void menuSA(Towns &towns, int &stop_time, double &temperature, double &min_tempe
             switch (value)
             {
             case 1:
-                operation = SwapOperation;
+                operation = TspAlgorithm::SwapOperation;
                 break;
             case 2:
-                operation = ReverseOperation;
+                operation = TspAlgorithm::ReverseOperation;
                 break;
             case 3:
-                operation = InsertOperation;
+                operation = TspAlgorithm::InsertOperation;
                 break;
             }
             break;
@@ -152,7 +152,7 @@ void menuSA(Towns &towns, int &stop_time, double &temperature, double &min_tempe
     } while (action != 8);
 }
 
-void menuTS(Towns &towns, int &stop_time, int &max_it_without_change, int &tabu_lifetime, NeighbourOperation &operation, bool &diversification)
+void menuTS(Towns &towns, int &stop_time, int &max_it_without_change, int &tabu_lifetime, TspAlgorithm::NeighbourOperation &operation, bool &diversification)
 {
     int action;
     int value;
@@ -264,13 +264,13 @@ void menuTS(Towns &towns, int &stop_time, int &max_it_without_change, int &tabu_
             switch (value)
             {
             case 1:
-                operation = SwapOperation;
+                operation = TspAlgorithm::SwapOperation;
                 break;
             case 2:
-                operation = ReverseOperation;
+                operation = TspAlgorithm::ReverseOperation;
                 break;
             case 3:
-                operation = InsertOperation;
+                operation = TspAlgorithm::InsertOperation;
                 break;
             }
             break;
@@ -297,7 +297,7 @@ void menu()
     int max_it_without_change;
     bool diversification;
     int data_read_count = 0;
-    NeighbourOperation operation;
+    TspAlgorithm::NeighbourOperation operation;
     do
     {
         cout << endl
@@ -338,7 +338,7 @@ void menu()
                 max_it_without_change = number_of_towns * 20;
                 tabu_lifetime = number_of_towns * 2;
                 diversification = true;
-                operation = SwapOperation;
+                operation = TspAlgorithm::SwapOperation;
             }
             break;
         case 's': // Simulated Annealing menu

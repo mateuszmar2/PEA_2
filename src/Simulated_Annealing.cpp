@@ -37,39 +37,6 @@ void SimulatedAnnealing::calculateTemperature()
     cout << "temperature = " << temperature << endl;
 }
 
-// zwraca koszt najlepszej ścieżki
-int SimulatedAnnealing::getRouteCost()
-{
-    return route_cost;
-}
-
-// zwraca długość trasy, trasa powinna zaczynać i kończyć się 0
-int SimulatedAnnealing::pathDistance(vector<int> route_to_calculate)
-{
-    int path_distance = 0;
-    // zliczenie sumy odległości w ścieżce aż do danego wierzchołka
-    for (int i = 0; i < number_of_towns; i++)
-        path_distance += matrix[route_to_calculate[i]][route_to_calculate[i + 1]];
-    return path_distance;
-}
-
-// zwraca losowy index poza pierwszym i ostatnim
-int SimulatedAnnealing::randomIndex()
-{
-    return rand() % (number_of_towns - 1) + 1;
-}
-
-// zwraca losową ścieżkę zaczynającą i kończącą się na 0
-vector<int> SimulatedAnnealing::randomRoute()
-{
-    vector<int> temp;
-    for (int i = 0; i < number_of_towns; i++)
-        temp.push_back(i);                        // w trasie indexy od 0 do liczby miast
-    random_shuffle(temp.begin() + 1, temp.end()); // losowa trasa zaczynająca się od 0
-    temp.push_back(0);                            // i kończąca się na 0
-    return temp;
-}
-
 // tworzy sąsiada za pomocą wybranej metody
 void SimulatedAnnealing::generateNeighbour(NeighbourOperation o, vector<int> &route)
 {
@@ -137,13 +104,4 @@ void SimulatedAnnealing::startSA()
         }
         temperature *= temperature_change; // obniżenie temperatury
     }
-}
-
-// wypisuje trasę oraz koszt
-void SimulatedAnnealing::printRoute()
-{
-    for (auto i = 0; i < route.size() - 1; i++)
-        cout << route[i] << " -> ";
-    cout << route[route.size() - 1] << endl;
-    cout << "Cost = " << route_cost << endl;
 }
