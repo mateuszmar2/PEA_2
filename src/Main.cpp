@@ -212,7 +212,7 @@ void menuTS(Towns &towns, int &stop_time, int &max_it_without_change, int &tabu_
         case 2: // dywersyfikacja
             cout << "Enter new diversification: ";
             cin >> value;
-            if (value != 0 || value != 1 || cin.fail())
+            if ((value != 0 && value != 1) || cin.fail())
             {
                 cout << "Invalid diversification" << endl;
                 break;
